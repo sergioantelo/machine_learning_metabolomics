@@ -1,0 +1,13 @@
+# IDES
+.idea 
+
+# Python
+__pycache__/
+
+# Data and results
+catboost_info/
+data/alvadesc/**/*.pkl
+data/optuna/*.db
+data/results/*.pkl
+
+
