@@ -27,7 +27,6 @@ class Preprocessor(BaseEstimator, TransformerMixin):
             ('f_selector', SelectKBest(score_func=f_regression, k=self.k))
         ])
         self._fgp_vs = VarianceThreshold(threshold=self.p * (1 - self.p))
-        # TODO: maybe it makes sense to create a third pipeline that further preprocesses the transformed dataset
 
     def fit(self, X, y=None):
         self._init_hidden_models()

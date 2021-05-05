@@ -14,7 +14,7 @@ def stratify_y(y, n_bins=6):
 
 
 class RegressionStratifiedKFold:
-    """This class implements Repeated K-fold with stratification for regression. To that end, the targe y is binned
+    """This class implements Repeated K-fold with stratification for regression. To that end, the target y is binned
     in several classes (as indicated by n_bins). """
     def __init__(self, n_splits, n_repeats=1, n_bins=6, random_seed=None):
         """

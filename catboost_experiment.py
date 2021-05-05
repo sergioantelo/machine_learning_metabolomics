@@ -30,6 +30,8 @@ else:
 
 if __name__ == '__main__':
     common_cols = ['pid', 'rt']
+
+    #Load fgps and descriptors
     fgp = load_alvadesc_data(split_as_np=False)
     descriptors = load_descriptors(split_as_np=False)
     descriptors = descriptors.drop_duplicates()
@@ -39,16 +41,24 @@ if __name__ == '__main__':
     def get_feature_names(x):
         return x.drop(common_cols, axis=1).columns
 
-    X_desc = descriptors_fgp[get_feature_names(descriptors)].values.astype('float32')
+    #Get fgps and descriptors' features
     X_fgp = descriptors_fgp[get_feature_names(fgp)].values.astype('float32')
+    X_desc = descriptors_fgp[get_feature_names(descriptors)].values.astype('float32')
     X = np.concatenate([X_desc, X_fgp], axis=1)
+
+    #Select either fgps or descriptors' features
     desc_col_selector = make_col_selector(X_desc.shape[1], return_first_half=True)
     fgp_col_selector = make_col_selector(X_desc.shape[1], return_first_half=False)
+
+    #Get the target
     y = descriptors_fgp['rt'].values.astype('float32').flatten()
 
+    #If test then take an X,y sample of length 1000 both
     if SMOKE_TEST:
         X, y = X[:1000, ...], y[:1000]
 
+    #Preprocess data 
+    #TODO: create a new pipeline that further improves preprocessing
     preprocessor = Preprocessor(desc_col_selector=desc_col_selector, fgp_col_selector=fgp_col_selector)
     estimator = WeightedCatBoostRegressor()
 
@@ -56,7 +66,7 @@ if __name__ == '__main__':
     search_cv = RegressionStratifiedKFold(SEARCH_CV, random_seed=SEED)
     metrics = {'mae': mean_absolute_error, 'med_ae': median_absolute_error}
     results = []
-    # We must used nested-cross-validation for evaluating the performance of the model. A new search must be done
+    # We must use nested-cross-validation for evaluating the performance of the model. A new search must be done
     # withing each fold!
     for fold, (train_index, test_index) in enumerate(outer_cv.split(X, y)):
         X_train, X_test = X[train_index], X[test_index]

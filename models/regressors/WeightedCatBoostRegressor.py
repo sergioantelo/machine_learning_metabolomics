@@ -39,4 +39,3 @@ class WeightedCatBoostRegressor(BaseEstimator, RegressorMixin):
 
     def predict(self, X):
         return self._model.predict(X)
-

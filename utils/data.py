@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pickle
 
-
+#Load descriptors
 def load_descriptors(n=None, split_as_np=True):
     target = 'rt'
     filename = 'data/alvadesc/descriptors/SMRT_descriptors.pkl'
@@ -30,7 +30,7 @@ def load_descriptors(n=None, split_as_np=True):
     else:
         return descriptors
 
-
+#Load fingerprints
 def load_alvadesc_data(n=None, split_as_np=True):
     target = 'rt'
     filename = 'data/alvadesc/fingerprints/fingerprint.pkl'
@@ -38,6 +38,7 @@ def load_alvadesc_data(n=None, split_as_np=True):
     if os.path.exists(filename):
         with open(filename, 'rb') as fd:
             fgp = pickle.load(fd)
+    #Get float32 for the posterior NN implementation
     else:
         sample = pd.read_csv(csv_filename, nrows=100)
         float_cols = [c for c in sample if sample[c].dtype == "float64"]
@@ -56,10 +57,8 @@ def load_alvadesc_data(n=None, split_as_np=True):
     else:
         return fgp
 
-
 def is_non_retained(y):
     return (y < 300).astype('int')
-
 
 def is_binary_feature(x):
     ux = np.unique(x)
