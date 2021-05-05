@@ -14,7 +14,8 @@ class WeightedCatBoostRegressor(BaseEstimator, RegressorMixin):
                  model_size_reg=None,
                  loss_function='RMSE',
                  verbose=False,
-                 weight_function=None):
+                 weight_function=None,
+                 eval_metric=None):
         super().__init__()
         args, _, _, values = inspect.getargvalues(inspect.currentframe())
         values.pop("self")

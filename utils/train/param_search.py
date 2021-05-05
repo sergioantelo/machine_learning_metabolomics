@@ -8,21 +8,21 @@ from sklearn.base import clone
 from models.regressors.WeightedCatBoostRegressor import WeightedCatBoostRegressor
 from utils.train.loss import truncated_medae_scorer, truncated_rmse_scorer
 
-
 @singledispatch
 def suggest_params(estimator, trial):
     raise NotImplementedError
 
-
 @suggest_params.register
 def _(estimator: WeightedCatBoostRegressor, trial):
     params = {
-        "depth": trial.suggest_int("depth", 1, 2)
-        # ...
+        "depth": trial.suggest_int("depth", 1, 10, 1),
+        "iterations": trial.suggest_int("iterations", 10, 100, 10),
+        #"use_best_model": trial.suggest_categorical("use_best_model",['True','False']), #provide non-empty eval_set
+        "eval_metric": trial.suggest_categorical("eval_metric", ['RMSE','MAE','MedianAbsoluteError']),
+        #"learning_rate": trial.suggest_int("learning_rate", 0.01, 0.1, 0.01),
+        "l2_leaf_reg": trial.suggest_int("l2_leaf_reg", 5, 30, 5)
     }
-    print(params)
     return params
-
 
 def create_objective(estimator, X, y, cv, scoring):
     estimator_factory = lambda: clone(estimator)
@@ -34,7 +34,6 @@ def create_objective(estimator, X, y, cv, scoring):
         return cross_val_score_with_pruning(estim, X, y, cv=cv, scoring=scoring, trial=trial)
 
     return objective
-
 
 def cross_val_score_with_pruning(estimator, X, y, cv, scoring, trial):
     cross_val_scores = []
@@ -50,7 +49,6 @@ def cross_val_score_with_pruning(estimator, X, y, cv, scoring, trial):
             raise optuna.TrialPruned()
     return np.mean(cross_val_scores)
 
-
 @singledispatch
 def param_search(estimator, X, y, cv, study, n_trials, scoring=truncated_rmse_scorer, keep_going=False):
     objective = create_objective(estimator, X, y, cv, scoring)
@@ -62,7 +60,6 @@ def param_search(estimator, X, y, cv, study, n_trials, scoring=truncated_rmse_sc
         study.optimize(objective, n_trials=n_trials)
     return load_best_params(estimator, study)
 
-
 @singledispatch
 def load_best_params(estimator, study):
     try:
@@ -70,7 +67,6 @@ def load_best_params(estimator, study):
     except Exception as e:
         print(f'Study for {type(estimator)} does not exist')
         raise e
-
 
 @singledispatch
 def set_best_params(estimator, study):
