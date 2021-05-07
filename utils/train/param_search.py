@@ -17,12 +17,17 @@ def _(estimator: WeightedCatBoostRegressor, trial):
     params = {
         "depth": trial.suggest_int("depth", 1, 10, 1),
         "iterations": trial.suggest_int("iterations", 10, 100, 10),
-        #"use_best_model": trial.suggest_categorical("use_best_model",['True','False']), #provide non-empty eval_set
+        # "use_best_model": trial.suggest_categorical("use_best_model",['True','False']), #provide non-empty eval_set
         "eval_metric": trial.suggest_categorical("eval_metric", ['RMSE','MAE','MedianAbsoluteError']),
-        #"learning_rate": trial.suggest_int("learning_rate", 0.01, 0.1, 0.01),
+        "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.1, step=0.01),
         "l2_leaf_reg": trial.suggest_int("l2_leaf_reg", 5, 30, 5)
+        # "nr_weight" = trial.suggest_float("non_retained_weight", 1e-6, 37.89)
     }
     return params
+
+# def assign_weights(y, non_retained_weight, retained_weight):
+#    non_retained = is_non_retained(y)
+#    return non_retained_weight * non_retained + retained_weight * (1 - non_retained)
 
 def create_objective(estimator, X, y, cv, scoring):
     estimator_factory = lambda: clone(estimator)

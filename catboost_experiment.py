@@ -16,7 +16,7 @@ from models.regressors.WeightedCatBoostRegressor import WeightedCatBoostRegresso
 SEED = 42
 RESULTS_FILENAME = 'data/results/catboost.pkl'
 # FIXME: change this! a small part of the dataset is used for smoke test!
-SMOKE_TEST = True
+SMOKE_TEST = False
 
 if SMOKE_TEST:
     OUT_CV = 2
@@ -69,6 +69,9 @@ if __name__ == '__main__':
     # We must use nested-cross-validation for evaluating the performance of the model. A new search must be done
     # withing each fold!
     for fold, (train_index, test_index) in enumerate(outer_cv.split(X, y)):
+        print("Hello")
+
+        #Stopped here when REAL TEST
         X_train, X_test = X[train_index], X[test_index]
         y_train, y_test = y[train_index], y[test_index]
 

@@ -26,6 +26,7 @@ class WeightedCatBoostRegressor(BaseEstimator, RegressorMixin):
         params = copy.copy(self.get_params())
         # Remove those params that are not used in CatBoost
         params.pop('weight_function')
+        # params['weight_function] = lambda y: assign_weights(y,nr_weight,1.0)
         return params
 
     def fit(self, X, y):
