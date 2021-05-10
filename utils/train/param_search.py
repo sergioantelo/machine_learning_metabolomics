@@ -7,6 +7,7 @@ from sklearn.base import clone
 
 from models.regressors.WeightedCatBoostRegressor import WeightedCatBoostRegressor
 from utils.train.loss import truncated_medae_scorer, truncated_rmse_scorer
+from utils.data import is_non_retained
 
 @singledispatch
 def suggest_params(estimator, trial):
@@ -15,19 +16,21 @@ def suggest_params(estimator, trial):
 @suggest_params.register
 def _(estimator: WeightedCatBoostRegressor, trial):
     params = {
-        "depth": trial.suggest_int("depth", 1, 10, 1),
-        "iterations": trial.suggest_int("iterations", 10, 100, 10),
+        "depth": trial.suggest_int("depth", 1, 10),
+        "iterations": trial.suggest_int("iterations", 10, 5000),
         # "use_best_model": trial.suggest_categorical("use_best_model",['True','False']), #provide non-empty eval_set
         "eval_metric": trial.suggest_categorical("eval_metric", ['RMSE','MAE','MedianAbsoluteError']),
-        "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.1, step=0.01),
-        "l2_leaf_reg": trial.suggest_int("l2_leaf_reg", 5, 30, 5)
-        # "nr_weight" = trial.suggest_float("non_retained_weight", 1e-6, 37.89)
+        "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.1),
+        "l2_leaf_reg": trial.suggest_float("l2_leaf_reg", 0, 30)
     }
+    nr_weight =  trial.suggest_float("weight_function", 1e-6, 37.89)
+    params['weight_function'] = lambda y: assign_weights(y,nr_weight,1.0)
+
     return params
 
-# def assign_weights(y, non_retained_weight, retained_weight):
-#    non_retained = is_non_retained(y)
-#    return non_retained_weight * non_retained + retained_weight * (1 - non_retained)
+def assign_weights(y, non_retained_weight, retained_weight):
+    non_retained = is_non_retained(y)
+    return non_retained_weight * non_retained + retained_weight * (1 - non_retained)
 
 def create_objective(estimator, X, y, cv, scoring):
     estimator_factory = lambda: clone(estimator)
@@ -69,6 +72,16 @@ def param_search(estimator, X, y, cv, study, n_trials, scoring=truncated_rmse_sc
 def load_best_params(estimator, study):
     try:
         return study.best_params
+    except Exception as e:
+        print(f'Study for {type(estimator)} does not exist')
+        raise e
+
+@load_best_params.register
+def _(estimator: WeightedCatBoostRegressor, study):
+    try:
+        params = study.best_params
+        params['weight_function'] = lambda y: assign_weights(y,params['weight_function'],1.0)
+        return params
     except Exception as e:
         print(f'Study for {type(estimator)} does not exist')
         raise e

@@ -3,7 +3,6 @@ import inspect
 from sklearn.base import BaseEstimator, RegressorMixin
 from catboost import CatBoostRegressor, Pool
 
-
 class WeightedCatBoostRegressor(BaseEstimator, RegressorMixin):
     def __init__(self,
                  iterations=None,
@@ -24,16 +23,15 @@ class WeightedCatBoostRegressor(BaseEstimator, RegressorMixin):
 
     def _catboost_params(self):
         params = copy.copy(self.get_params())
-        # Remove those params that are not used in CatBoost
         params.pop('weight_function')
-        # params['weight_function] = lambda y: assign_weights(y,nr_weight,1.0)
         return params
 
     def fit(self, X, y):
         self._model = CatBoostRegressor(**self._catboost_params())
         if self.weight_function:
             self._model.fit(
-                Pool(data=X, label=y, weight=self.weight_function(y))
+                Pool(data=X, label=y, weight=
+                self.weight_function(y))
             )
         else:
             self._model.fit(X, y)
