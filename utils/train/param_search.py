@@ -17,8 +17,8 @@ def suggest_params(estimator, trial):
 @suggest_params.register
 def _(estimator: WeightedCatBoostRegressor, trial):
     params = {
-        "depth": trial.suggest_int("depth", 1, 10),
-        "iterations": trial.suggest_int("iterations", 10, 5000),
+        "depth": trial.suggest_int("depth", 1, 50),
+        "iterations": trial.suggest_int("iterations", 10, 10000),
         # "use_best_model": trial.suggest_categorical("use_best_model",['True','False']), #provide non-empty eval_set
         "eval_metric": trial.suggest_categorical("eval_metric", ['RMSE','MAE','MedianAbsoluteError']),
         "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.1),

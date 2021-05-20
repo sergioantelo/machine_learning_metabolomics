@@ -19,6 +19,9 @@ class Preprocessor(BaseEstimator, TransformerMixin):
 
     def _init_hidden_models(self):
         # TODO: not included here the non-retained predictor for simplicity
+
+        # Try out MultipleImputer (similar to MICE when sample_posterior = True and random_state = number)
+        # Try out PCA and supress SelectKBest
         self._desc_pipeline = Pipeline([
             ('scaler', StandardScaler()),
             ('imputation', SimpleImputer(missing_values=np.nan, strategy='median', add_indicator=True)),

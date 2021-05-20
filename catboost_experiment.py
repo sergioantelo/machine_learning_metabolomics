@@ -16,7 +16,7 @@ from models.regressors.WeightedCatBoostRegressor import WeightedCatBoostRegresso
 SEED = 42
 RESULTS_FILENAME = 'data/results/catboost.pkl'
 # FIXME: change this! a small part of the dataset is used for smoke test!
-SMOKE_TEST = True
+SMOKE_TEST = False
 
 if SMOKE_TEST:
     OUT_CV = 2
@@ -98,4 +98,3 @@ if __name__ == '__main__':
     pprint.pprint(results)
     with open(RESULTS_FILENAME, 'wb') as fd:
         pickle.dump(results, fd)
-
