@@ -10,11 +10,11 @@ from utils.train.model_selection import RegressionStratifiedKFold
 from utils.train.param_search import param_search
 from models.preprocessors.preprocessors import Preprocessor
 from models.preprocessors.column_selectors import make_col_selector
-from models.regressors.WeightedCatBoostRegressor import WeightedCatBoostRegressor
+from models.regressors.Dnns import SkDnnModel, SkTransformedDnnModel
 
 #######################################################################################################################
 SEED = 42
-RESULTS_FILENAME = 'data/results/catboost.pkl'
+RESULTS_FILENAME = 'data/results/dnns.pkl'
 # FIXME: change this! a small part of the dataset is used for smoke test!
 SMOKE_TEST = False
 
@@ -60,7 +60,7 @@ if __name__ == '__main__':
     #Preprocess data 
     #TODO: create a new pipeline that further improves preprocessing
     preprocessor = Preprocessor(desc_col_selector=desc_col_selector, fgp_col_selector=fgp_col_selector)
-    estimator = WeightedCatBoostRegressor()
+    estimator = SkTransformedDnnModel()
 
     outer_cv = RegressionStratifiedKFold(OUT_CV, random_seed=SEED)
     search_cv = RegressionStratifiedKFold(SEARCH_CV, random_seed=SEED)
@@ -77,9 +77,9 @@ if __name__ == '__main__':
             X_test = preprocessor.transform(X_test)
 
         study = optuna.create_study(
-            study_name=f'CatBoost-CV-{fold}',
+            study_name=f'DNN-CV-{fold}',
             direction='maximize',
-            storage='sqlite:///data/optuna/catboost.db',
+            storage='sqlite:///data/optuna/dnn.db',
             load_if_exists=True,
             pruner=optuna.pruners.MedianPruner()
         )
