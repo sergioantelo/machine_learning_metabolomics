@@ -4,6 +4,7 @@ import numpy as np
 import optuna
 from optuna.trial import TrialState
 from sklearn.base import clone
+from sklearn.model_selection import train_test_split 
 
 from models.regressors.WeightedCatBoostRegressor import WeightedCatBoostRegressor
 from utils.train.loss import truncated_medae_scorer, truncated_rmse_scorer
@@ -49,16 +50,19 @@ def create_objective(estimator, X, y, cv, scoring):
 
 def cross_val_score_with_pruning(estimator, X, y, cv, scoring, trial):
     cross_val_scores = []
-    for step, (train_index, test_index) in enumerate(cv.split(X, y)):
-        est = clone(estimator)
-        X_train, X_test = X[train_index], X[test_index]
-        y_train, y_test = y[train_index], y[test_index]
-        est.fit(X_train, y_train)
-        cross_val_scores.append(scoring(est, X_test, y_test))
-        intermediate_value = np.mean(cross_val_scores)
-        trial.report(intermediate_value, step)
-        if trial.should_prune():
-            raise optuna.TrialPruned()
+    #for step, (train_index, test_index) in enumerate(cv.split(X, y)):
+    est = clone(estimator)
+        #X_train, X_test = X[train_index], X[test_index]
+        #y_train, y_test = y[train_index], y[test_index]
+
+    X_train,X_test,y_train,y_test=train_test_split(X,y,test_size=0.2) #del
+
+    est.fit(X_train, y_train)
+    cross_val_scores.append(scoring(est, X_test, y_test))
+    intermediate_value = np.mean(cross_val_scores)
+    trial.report(intermediate_value, 0) #step instead of 0
+    if trial.should_prune():
+        raise optuna.TrialPruned()
     return np.mean(cross_val_scores)
 
 

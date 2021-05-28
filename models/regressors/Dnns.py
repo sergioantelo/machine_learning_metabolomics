@@ -28,7 +28,7 @@ class DnnModel(nn.Module):
         nn.init.zeros_(self.l_out.bias)
 
     def forward(self, x):
-        x = self.d1(F.gelu(self.l1(x))) #reason? RELU, ELU, SELU, Sigmoid, TanH?
+        x = self.d1(F.gelu(self.l1(x))) #reason? RELU, ELU, SELU? Best of all tried
         x = self.d2(F.gelu(self.l2(x)))
         return self.l_out(x)
 
@@ -53,14 +53,14 @@ class SkDnnModel(BaseEstimator, RegressorMixin):
                                                                                   #as good as SGD)
         self._scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
             self._optimizer, T_0=self._T0, T_mult=1, eta_min=min_lr
-        ) #reason? why Adam and then SWA?
+        ) 
         self._swa_model = AveragedModel(self._model) 
         self._swa_scheduler = SWALR(self._optimizer, swa_lr=min_lr)
 
     def fit(self, X, y):
         self._init_hidden_model()
         dataset = TensorDataset(torch.from_numpy(X), torch.from_numpy(y).view(-1, 1))
-        data_loader = DataLoader(dataset, batch_size=self._batch_size, shuffle=True) #batches?
+        data_loader = DataLoader(dataset, batch_size=self._batch_size, shuffle=True) #batches? tested some options and this is the better
 
         self._model.train()
         train_iters = len(data_loader)
@@ -93,11 +93,7 @@ class SkDnnModel(BaseEstimator, RegressorMixin):
 
 
 class SkTransformedDnnModel(BaseEstimator, RegressorMixin):
-    def __init__(self, n_features, hidden_sizes=[2048, 1024, 512, 128], dropout=0.2,
-                 use_bn=False, use_wn=False, lr=1e-3, max_epochs=10000, batch_size=64,
-                 patience=5, train_split=0.1,
-                 optimizer=torch.optim.Adam, lr_scheduler=None,
-                 weight_decay=0, selector=None):
+    def __init__(self, n_features, selector=None):
         super().__init__()
         args, _, _, values = inspect.getargvalues(inspect.currentframe())
         values.pop("self")
