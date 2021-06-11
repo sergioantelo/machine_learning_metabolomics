@@ -1,11 +1,10 @@
-from torch_geometric.nn import MessagePassing
-from torch_scatter import scatter_add
-from torch_geometric.utils import add_self_loops, degree
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from torch_geometric.nn import MessagePassing
+from torch_scatter import scatter_add
+from torch_geometric.utils import add_self_loops, degree
 
 class NeuralLoop(MessagePassing):
     def __init__(self, atom_features, fp_size):
@@ -20,21 +19,22 @@ class NeuralLoop(MessagePassing):
         return self.propagate(edge_index, size=(x.size(0), x.size(0)), x=x)
     
     def message(self, x_j, edge_index, size):
-        # Sum all the neighbouring nodes (including self-loops, done implicitly by pytorch-geometric)
+        # We simply sum all the neighbouring nodes (including self-loops)
+        # This is done implicitly by PyTorch-Geometric :)
         return x_j 
     
     def update(self, v):
-        updated_atom_features = self.H(v).sigmoid()
+        
+        updated_atom_features = self.H(v.float()).sigmoid()
         updated_fingerprint = self.W(updated_atom_features).softmax(dim=-1)
         
-        return updated_atom_features, updated_fingerprint
+        return updated_atom_features, updated_fingerprint # shape [N, atom_features]
     
-
 class NeuralFP(nn.Module):
-    def __init__(self, atom_features=52, fp_size=2214):
+    def __init__(self, atom_features=2, fp_size=2214):
         super(NeuralFP, self).__init__()
         
-        self.atom_features = 52
+        self.atom_features = 2
         self.fp_size = 2214
         
         self.loop1 = NeuralLoop(atom_features=atom_features, fp_size=fp_size)
@@ -64,4 +64,4 @@ class MLP_Regressor(nn.Module):
     def forward(self, batch):
         fp = self.neural_fp(batch)
         hidden = F.relu(self.dropout(self.lin1(fp)))
-        return fp #out
+        return fp.t()#out
