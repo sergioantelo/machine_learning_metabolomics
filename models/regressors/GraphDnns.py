@@ -64,4 +64,5 @@ class MLP_Regressor(nn.Module):
     def forward(self, batch):
         fp = self.neural_fp(batch)
         hidden = F.relu(self.dropout(self.lin1(fp)))
-        return fp.t()#out
+        out = self.lin2(hidden)
+        return out
