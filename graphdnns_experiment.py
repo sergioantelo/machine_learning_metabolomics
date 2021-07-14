@@ -21,10 +21,13 @@ import os
 
 import re
 
+from sklearn.metrics import mean_squared_error
+
 def get_atom_features(mol):
     atomic_number = []
     num_hs = []
-    
+
+    #TODO: Which ones to choose (CRITICAL)
     for atom in mol.GetAtoms():
         atomic_number.append(atom.GetAtomicNum())
         num_hs.append(atom.GetTotalNumHs(includeNeighbors=True))
@@ -109,25 +112,25 @@ if __name__ == '__main__':
         smiles = f.read().splitlines()
 
     mol_list = [Chem.MolFromSmiles(smi) for smi in smiles]
-    dloader, dlist = prepare_dataloader(mol_list, batch_size)
-
-    for batch in dloader:
-         break
-
-    neural_fp = NeuralFP(atom_features=2, fp_size=2214)
-    fps = neural_fp(batch) 
+    # dloader, dlist = prepare_dataloader(mol_list, batch_size)
+    #
+    # for batch in dloader:
+    #     break
+    #
+    # neural_fp = NeuralFP(atom_features=2, fp_size=1778)
+    # fps = neural_fp(batch)
 
     # # ############################################
     # # ## LEARNING FGPS THROUGH BACKPROPAGATION
     # # ############################################
     
-    #Retrieve smiles
+    #Retrieve smiles and sort them alphanumerically
     def sorted_alphanumeric(data):
         convert = lambda text: int(text) if text.isdigit() else text.lower()
-        alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ] 
+        alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key) ]
         return sorted(data, key=alphanum_key)
 
-    filenames = sorted_alphanumeric(os.listdir('../../sdfs/'))
+    filenames = sorted_alphanumeric(os.listdir('../../extra/sdfs/'))
     pids = [f.strip('.sdf') for f in filenames]
     df_mols = pd.DataFrame({'pid': pids,'mol': mol_list})
     df_mols['pid'] = df_mols['pid'].astype('int')
@@ -142,29 +145,61 @@ if __name__ == '__main__':
 
     df_mols_rts = pd.merge(df_mols, df_rts, on='pid')
 
+    #Get diff fingerprints + final target
     X = df_mols_rts['mol'].values
+    dloader, dlist = prepare_dataloader(X, batch_size)
+
+    # for batch in dloader:
+    #     break
+
+    # print(batch.x)
+    # print(dlist[0].x)
+    # print(len(batch.x))
+    # print(len(dlist[0].x))
+    #
+    # for (i,ten) in enumerate(dlist):
+    #     if i == 0:
+    #         new_d = ten.x
+    #     elif i < 64:
+    #         new_d = torch.cat((new_d,ten.x),0)
+    #
+    # print(len(new_d))
+    #
+    # exit(0)
+
+    neural_fp = NeuralFP(atom_features=2, fp_size=1778)
+    X = neural_fp(dlist)
     y = df_mols_rts['rt'].values.astype('float32').flatten()
 
-    X_train,X_test,y_train,y_test=train_test_split(X,y,test_size=0.2) 
+    #X_train,X_test,y_train,y_test=train_test_split(X,y,test_size=0.2)
 
-    train_loader, _ = prepare_dataloader(X_train, batch_size)
-    test_loader, _ = prepare_dataloader(X_test, batch_size)
+    #train_loader, _ = prepare_dataloader(X_train, batch_size)
+    #test_loader, _ = prepare_dataloader(X_test, batch_size)
 
-    train_labels_loader = torch.utils.data.DataLoader(y_train, batch_size)
+    #train_labels_loader = torch.utils.data.DataLoader(y_train, batch_size)
     #valid_labels_loader = torch.utils.data.DataLoader(valid.y, batch_size=batch_size)
-    test_labels_loader = torch.utils.data.DataLoader(y_test, batch_size)
+    #test_labels_loader = torch.utils.data.DataLoader(y_test, batch_size)
 
-    reg = MLP_Regressor(neural_fp, atom_features=2, fp_size=2214, hidden_size=100)
+    reg = MLP_Regressor(neural_fp, atom_features=2, fp_size=1778, hidden_size=100)
     optimizer = torch.optim.SGD(reg.parameters(), lr=0.001, weight_decay=0.001)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=100)
 
-    total_epochs = 100 #1000
-    for epoch in range(1, total_epochs+1):
-        train_loss = train_fn(train_loader, train_labels_loader, reg, opt=optimizer)
-        test_loss = test_fn(test_loader, test_labels_loader, reg)#valid_loss = valid_fn(valid_loader, valid_labels_loader, reg)
-        scheduler.step(test_loss)#valid_loss)
-
-        if epoch % 10 == 0:
-            print(f'Epoch:{epoch}, Train loss: {train_loss}, Test loss: {test_loss}')#, Valid loss: {valid_loss}')
+    total_epochs = 10 #1000
+    for epoch in range(total_epochs):
+        for (G,target) in zip(X,y):
+            optimizer.zero_grad()
+            preds = reg(G)
+            print(preds)
+            exit(0)
+            # loss = mean_squared_error(preds, target)
+            # loss.backward()
+            # optimizer.step()
+    # for epoch in range(1, total_epochs+1):
+    #     train_loss = train_fn(train_loader, train_labels_loader, reg, opt=optimizer)
+    #     test_loss = test_fn(test_loader, test_labels_loader, reg)#valid_loss = valid_fn(valid_loader, valid_labels_loader, reg)
+    #     scheduler.step(test_loss)#valid_loss)
+    #
+    #     if epoch % 10 == 0:
+    #         print(f'Epoch:{epoch}, Train loss: {train_loss}, Test loss: {test_loss}')#, Valid loss: {valid_loss}')
 
 

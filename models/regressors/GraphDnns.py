@@ -6,6 +6,8 @@ from torch_geometric.nn import MessagePassing
 from torch_scatter import scatter_add
 from torch_geometric.utils import add_self_loops, degree
 
+import numpy as np
+
 class NeuralLoop(MessagePassing):
     def __init__(self, atom_features, fp_size):
         super(NeuralLoop, self).__init__(aggr='add')
@@ -31,30 +33,40 @@ class NeuralLoop(MessagePassing):
         return updated_atom_features, updated_fingerprint # shape [N, atom_features]
     
 class NeuralFP(nn.Module):
-    def __init__(self, atom_features=2, fp_size=2214):
+    def __init__(self, atom_features=2, fp_size=1778): #FIXME: change fp_size accordingly
         super(NeuralFP, self).__init__()
         
         self.atom_features = 2
-        self.fp_size = 2214
+        self.fp_size = 1778
         
         self.loop1 = NeuralLoop(atom_features=atom_features, fp_size=fp_size)
         self.loop2 = NeuralLoop(atom_features=atom_features, fp_size=fp_size)
         self.loops = nn.ModuleList([self.loop1, self.loop2])
         
     def forward(self, data):
-        fingerprint = torch.zeros((data.batch.shape[0], self.fp_size), dtype=torch.float)
-        
-        out = data.x
+        for (i, o) in enumerate(data):
+            if i == 0:
+                node = o.x
+                index = o.edge_index
+            elif i < 64: #FIXME: change to full size when ready (80k, intensive)
+                node = torch.cat((node, o.x), 0)
+                index = o.edge_index
+
+        fingerprint = torch.zeros((len(node), self.fp_size), dtype=torch.float)  # data.batch.shape[0]
+        out = node #data.x
         for idx, loop in enumerate(self.loops):
-            updated_atom_features, updated_fingerprint = loop(out, data.edge_index)
+            updated_atom_features, updated_fingerprint = loop(out, index) #data.edge_index
             out = updated_atom_features
             fingerprint += updated_fingerprint
-            
-        return scatter_add(fingerprint, data.batch, dim=0)
+
+        print(fingerprint.shape, node.shape)
+        print(fingerprint)
+        print(node)
+        return scatter_add(fingerprint, node, dim=0) #data.batch
 
 
 class MLP_Regressor(nn.Module):
-    def __init__(self, neural_fp, atom_features=2, fp_size=2048, hidden_size=100):
+    def __init__(self, neural_fp, atom_features=2, fp_size=1778, hidden_size=100):
         super(MLP_Regressor, self).__init__()
         self.neural_fp = neural_fp
         self.lin1 = nn.Linear(fp_size, hidden_size)
