@@ -21,6 +21,8 @@ import os
 
 import re
 
+import matplotlib.pyplot as plt
+
 
 def get_atom_features(mol):
     atomic_number = []
@@ -57,10 +59,12 @@ def prepare_dataloader(mol_list, batch_size):
     return DataLoader(data_list, batch_size=batch_size, shuffle=False), data_list
 
 
-def train_step(batch, labels, reg):
+def train_step(batch, labels, reg, opt):
+    opt.zero_grad()
     out = reg(batch)
     loss = F.mse_loss(torch.flatten(out), labels.to(torch.float), reduction='mean')
     loss.backward()
+    opt.step()
     return loss
 
 
@@ -74,12 +78,12 @@ def train_fn(train_loader, train_labels_loader, reg, opt):
     reg.train()
     total_loss = 0
     for idx, (batch, labels) in enumerate(zip(train_loader, train_labels_loader)):
-        loss = train_step(batch, labels, reg)
+        loss = train_step(batch, labels, reg, opt)
         total_loss += loss.item()
 
-    torch.nn.utils.clip_grad_norm_(reg.parameters(), 1)
-    opt.step()
-    opt.zero_grad()
+    # opt.zero_grad()
+    # opt.step()
+    # torch.nn.utils.clip_grad_norm_(reg.parameters(), 1)
     return total_loss / len(train_loader)
 
 
@@ -162,13 +166,18 @@ if __name__ == '__main__':
     optimizer = torch.optim.SGD(reg.parameters(), lr=0.001, weight_decay=0.001)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=100)
 
-    total_epochs = 10  # 1000
+    total_epochs = 100  # 1000
+    train_loss_values = test_loss_values = []
     for epoch in range(1, total_epochs + 1):
         train_loss = train_fn(train_loader, train_labels_loader, reg, opt=optimizer)
-        test_loss = test_fn(test_loader, test_labels_loader, reg)  # valid_loss = valid_fn(valid_loader, valid_labels_loader, reg)
+        train_loss_values.append(train_loss)
+        test_loss = test_fn(test_loader, test_labels_loader, reg)
+        test_loss_values.append(test_loss)
         scheduler.step(test_loss)  # valid_loss)
 
         if epoch % 10 == 0:
             print(f'Epoch:{epoch}, Train loss: {train_loss}, Test loss: {test_loss}')  # , Valid loss: {valid_loss}')
 
-
+    plt.plot(train_loss_values)
+    plt.plot(test_loss_values)
+    plt.show()
