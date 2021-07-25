@@ -32,10 +32,10 @@ class NeuralLoop(MessagePassing):
 
 
 class NeuralFP(nn.Module):
-    def __init__(self, atom_features=2, fp_size=2214):
+    def __init__(self, atom_features=11, fp_size=2214):
         super(NeuralFP, self).__init__()
 
-        self.atom_features = 2
+        self.atom_features = 11
         self.fp_size = 2214
 
         self.loop1 = NeuralLoop(atom_features=atom_features, fp_size=fp_size)
@@ -55,7 +55,7 @@ class NeuralFP(nn.Module):
 
 
 class MLP_Regressor(nn.Module):
-    def __init__(self, neural_fp, atom_features=2, fp_size=2048, hidden_size=100):
+    def __init__(self, neural_fp, atom_features=11, fp_size=2048, hidden_size=100):
         super(MLP_Regressor, self).__init__()
         self.neural_fp = neural_fp
         self.lin1 = nn.Linear(fp_size, hidden_size)

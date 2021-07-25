@@ -25,14 +25,29 @@ import matplotlib.pyplot as plt
 
 
 def get_atom_features(mol):
-    atomic_number = []
-    num_hs = []
+    atomic_number = num_hs = degree = mass = index = aromatic = isotope = \
+        electrons = valence = query = ring = []
 
     for atom in mol.GetAtoms():
         atomic_number.append(atom.GetAtomicNum())
         num_hs.append(atom.GetTotalNumHs(includeNeighbors=True))
+        degree.append(atom.GetTotalDegree())
+        mass.append(atom.GetMass())
+        #bonds.append(atom.GetBonds())
+        #hybridization.append(atom.GetHybridization())
+        index.append(atom.GetIdx())
+        aromatic.append(atom.GetIsAromatic())
+        isotope.append(atom.GetIsotope())
+        #neighbors.append(atom.GetNeighbors())
+        #owning_mol.append(atom.GetOwningMol())
+        electrons.append(atom.GetNumRadicalElectrons())
+        valence.append(atom.GetTotalValence())
+        query.append(atom.HasQuery())
+        #chirality.append(atom.InvertChirality())
+        ring.append(atom.IsInRing())
 
-    return torch.tensor([atomic_number, num_hs]).t()
+
+    return torch.tensor([atomic_number, num_hs, degree, mass, index, aromatic, isotope, electrons, valence, query, ring]).t()
 
 
 def get_edge_index(mol):
@@ -107,6 +122,7 @@ if __name__ == '__main__':
     ############################################
 
     batch_size = 64
+    atom_feats = 11
 
     with open('data/alvadesc/fingerprints/smiles.txt') as f:
         smiles = f.read().splitlines()
@@ -117,7 +133,7 @@ if __name__ == '__main__':
     # for batch in dloader:
     #     break
 
-    neural_fp = NeuralFP(atom_features=2, fp_size=2214)
+    neural_fp = NeuralFP(atom_features=atom_feats, fp_size=2214)
 
 
     # fps = neural_fp(batch)
@@ -162,7 +178,7 @@ if __name__ == '__main__':
     # valid_labels_loader = torch.utils.data.DataLoader(valid.y, batch_size=batch_size)
     test_labels_loader = torch.utils.data.DataLoader(y_test, batch_size)
 
-    reg = MLP_Regressor(neural_fp, atom_features=2, fp_size=2214, hidden_size=100)
+    reg = MLP_Regressor(neural_fp, atom_features=atom_feats, fp_size=2214, hidden_size=100)
     optimizer = torch.optim.SGD(reg.parameters(), lr=0.001, weight_decay=0.001)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=100)
 
